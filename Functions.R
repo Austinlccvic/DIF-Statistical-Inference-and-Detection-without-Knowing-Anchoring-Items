@@ -1,6 +1,7 @@
 library(fastGHQuad)
 library(quantreg)
 library(MASS)
+library(zoo)
 
 
 gauss=gaussHermiteData(n=31)#We use 31 Gaussian quadrature
@@ -788,8 +789,111 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
   }  
   
   return(list(TPR_L1=TPR_L1, FPR_L1=FPR_L1, AIC_L1=AIC_L1, BIC_L1=BIC_L1, gam_L1=gam_L1, gam_L1_opt=gam_L1_opt, opt_penalty=opt_penalty, 
-              TPR_prop=TPR_prop, FPR_prop=FPR_prop, AIC_prop=AIC_prop, BIC_prop=BIC_prop, gam_prop=gam_prop,gam_prop_opt=gam_prop_opt, opt_threshold=opt_threshold))
+              TPR_prop=TPR_prop, FPR_prop=FPR_prop, AIC_prop=AIC_prop, BIC_prop=BIC_prop, gam_prop=gam_prop, gam_prop_opt=gam_prop_opt, opt_threshold=opt_threshold))
 }
+
+
+
+
+###Benjamini&Hochberg procedures
+bh=function(p_value, fdr){#return a list of indices that are predicted to be positive
+  J=length(p_value)
+  ord=order(p_value)
+  ordered_pvalue=p_value[ord]
+  rank=1:J
+  critical_value=c()
+  for (i in 1:J){
+    critical_value=c(critical_value, fdr*rank[i]/J)
+  }
+  p_v=ordered_pvalue[1]
+  i=1
+  while (p_v<critical_value[i]){
+    i=i+1
+    p_v=ordered_pvalue[i]
+  }
+  if(i==1){
+    return(c(0))
+  }
+  else{
+    threshold=ordered_pvalue[1, i-1]
+    return(which(p_value<=threshold))
+  }
+}
+
+FDR=function(pmat, gamma.vec, fdr){
+  ind0=which(gamma.vec==0)
+  J=length(gamma.vec)
+  False_dis_rate=c()
+  for (i in 1:dim(pmat)[1]){
+    prd_ind=bh(p_value=pmat[i,], fdr=fdr)
+    if (prd_ind[1]==0){
+      False_dis_rate=c(False_dis_rate, 0)
+    }
+    
+    else{
+      wrong=length(intersect(prd_ind, ind0))
+      False_dis_rate=c(False_dis_rate, round(wrong/length(prd_ind), 3))
+    }
+  }
+  return(mean(False_dis_rate))
+}
+
+
+
+###Evaluate area under ROC curve ###
+eva_tpr_fpr=function(gam, gamma.vec, rep){
+  ind1=which(gamma.vec!=0)
+  ind0=which(gamma.vec==0)
+  n_p=length(ind1)
+  n_n=length(ind0)
+  TPR=NULL
+  FPR=NULL
+  for (i in 1:rep){
+    tpr_c=c()
+    fpr_c=c()
+    for (j in 1:20){
+      ga=as.numeric(gam[(20*(i-1)+j), ])
+      g_hat_p=ga[ind1]
+      g_hat_n=ga[ind0]
+      tpr_c=c(tpr_c, length(which(g_hat_p!=0))/n_p)
+      fpr_c=c(fpr_c, length(which(g_hat_n!=0))/n_n)
+    }
+    TPR=rbind(TPR, tpr_c)
+    FPR=rbind(FPR, fpr_c)
+  }
+  return(list(TPR=TPR, FPR=FPR))
+}
+
+eva_auc=function(tpr, fpr){
+  tpr_c=apply(tpr, 2, mean)
+  fpr_c=apply(fpr, 2, mean)
+  tpr_c=c(tpr_c, 1)
+  fpr_c=c(fpr_c, 1)
+  id = order(fpr_c)
+  auc=sum(diff(fpr_c[id])*rollmean(tpr_c[id],2))
+  return(mean(auc))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
