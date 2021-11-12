@@ -98,7 +98,7 @@ target_function=function(phi_j, x, Y_j, z,  mu_pres, q){
   return(res)
 }
 
-#Evaluate target function at anchor items phi_j=(a_j, b_j, g_j), i.e. negative log-likelihood at phi_j
+#Evaluate target function at anchor items by fixing g_j=0, phi_j=(a_j, b_j, g_j), i.e. negative log-likelihood at phi_j
 #Y_j=Y[,j]
 target_function1=function(phi_j, x, Y_j, z,  mu_pres, q){
   N=length(x)
@@ -246,7 +246,6 @@ EM_2PL_lrt <- function(a, b, g, x, dat, z, mu, w, anchor, tol = 0.001){#anchor i
       phi1[j, ]=par_updates$par
       }
     }
-    #phi1[anchor, 3]=0
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
     MLL = mml(a=phi1[,1], b=phi1[,2], g=phi1[,3], x, dat, z, mu, w)
@@ -468,7 +467,6 @@ EM_2PL_non_zero <- function(a, b, g, x, dat, z, mu, w, tol){
       phi1[j, ]=par_updates$par
       }
     }
-    #phi1[idx0, 3]=0
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
     MLL = mml(a=phi1[,1], b=phi1[,2], g=phi1[,3], x, dat, z, mu, w)
@@ -479,8 +477,7 @@ EM_2PL_non_zero <- function(a, b, g, x, dat, z, mu, w, tol){
 
 
 
-### Coverage rate ####
-
+### Coverage rate ###
 #For LRT method
 coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){#sig_list is used to construct ROC
   J=length(gamma.vec)
@@ -514,7 +511,7 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
     dat[] = rbinom(N*J, 1, prob); 
     
     #Train model
-    r=EM_2PL(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w, anchor = anchor)
+    r=EM_2PL_lrt(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w, anchor = anchor)
     g_hat=r$gamma.vec
     mu_hat=r$mu
     a_hat=r$alpha.vec
@@ -526,7 +523,7 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
     eig=eigen(varian)
     eig=eig$values
     
-    if (any(eig<0)){
+    if (any(eig<0)){#If the estimated inverse information is not semi-positive definite, we generate new replica and train again.
       theta.vec=c(rnorm(n0, mean = 0, sd=1), rnorm(n1, mean = 0.5, sd=1))
       temp = (theta.vec %*% t(rep(1, J))*(rep(1, N)%*%t(alpha.vec))) - rep(1, N) %*% t(beta.vec) + (x.vec%*%t(rep(1, J)))*(rep(1, N)%*%t(gamma.vec))
       prob = 1/(1+exp(-temp));
@@ -534,7 +531,7 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
       dat[] = rbinom(N*J, 1, prob); 
       
       #Train model
-      r=EM_2PL(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w, anchor = anchor)
+      r=EM_2PL_lrt(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w, anchor = anchor)
       g_hat=r$gamma.vec
       mu_hat=r$mu
       a_hat=r$alpha.vec
@@ -636,7 +633,7 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
     dat[] = rbinom(N*J, 1, prob); 
     
     #Train model
-    r=EM_2PL(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w)
+    r=EM_2PL_inference(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w)
     g_hat=r$gamma.vec
     mu_hat=r$mu
     a_hat=r$alpha.vec
@@ -655,7 +652,7 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
       dat[] = rbinom(N*J, 1, prob); 
       
       #Train model
-      r=EM_2PL(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w)
+      r=EM_2PL_inference(a=alpha.vec, b=beta.vec, g=gamma.vec, x=x.vec, dat, z, mu=0.5, w)
       g_hat=r$gamma.vec
       mu_hat=r$mu
       a_hat=r$alpha.vec
@@ -808,7 +805,7 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     
     
     #Proposed method
-    r=EM_2PL(runif(J), runif(J), runif(J), x=x.vec, dat, z, mu=0.5, w, tol=tol)
+    r=EM_2PL_inference(runif(J), runif(J), runif(J), x=x.vec, dat, z, mu=0.5, w, tol=tol)
     g_hat=r$gamma.vec
     mu_hat=r$mu
     a_hat=r$alpha.vec
