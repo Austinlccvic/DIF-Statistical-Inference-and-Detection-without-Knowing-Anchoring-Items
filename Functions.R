@@ -98,6 +98,30 @@ target_function=function(phi_j, x, Y_j, z,  mu_pres, q){
   return(res)
 }
 
+#Evaluate target function at anchor items phi_j=(a_j, b_j, g_j), i.e. negative log-likelihood at phi_j
+#Y_j=Y[,j]
+target_function1=function(phi_j, x, Y_j, z,  mu_pres, q){
+  N=length(x)
+  n=length(z)
+  n1=length(which(x==1))
+  n0=length(which(x==0))
+  #mu=phi_j[1]
+  a_j=phi_j[1]
+  b_j=phi_j[2]
+  g_j=0
+  
+  #Evaluate log-likelihood
+  Theta=tran(z, x, mu_pres)
+  t1=-0.5*(Theta-c(rep(0, n0), rep(mu_pres, n1))%*%t(rep(1, n)))^2 #normal term in log-likelihood  #remove prior term
+  temp=Theta*a_j-b_j*(rep(1,N)%*%t(rep(1, n)))+(x%*%t(rep(1, n)))*g_j #N by n
+  t2=Y_j%*%t(rep(1, n))*temp-log(1+exp(temp)) #The remaining term in log-likelihood
+  log_likelihood=t1+t2 #N by n
+  #log_likelihood=t2 #N by n
+  
+  res=-sum(q*log_likelihood)
+  return(res)
+}
+
 #Evaluate gradient with respect to phi
 grad_phi=function(phi_j, x, Y_j, z, mu_pres, q){
   N=length(x)
@@ -115,6 +139,25 @@ grad_phi=function(phi_j, x, Y_j, z, mu_pres, q){
   dg=sum((x%*%t(rep(1, n)))*(Y_j%*%t(rep(1, n))-p)*q)/N
   return(-c(da, db, dg))
 }
+
+#Evaluate gradient with respect to phi at the anchor items
+grad_phi1=function(phi_j, x, Y_j, z, mu_pres, q){
+  N=length(x)
+  n=length(z)
+  a_j=phi_j[1]
+  b_j=phi_j[2]
+  g_j=0
+  
+  #Evaluate gradient
+  Theta=tran(z, x, mu_pres)
+  temp=Theta*a_j-b_j*(rep(1,N)%*%t(rep(1, n)))+(x%*%t(rep(1, n)))*g_j #N by n
+  p=exp(temp)/(1+exp(temp))
+  da=sum(Theta*(Y_j%*%t(rep(1, n))-p)*q)/N
+  db=sum((-Y_j%*%t(rep(1, n))+p)*q)/N
+  #dg=sum((x%*%t(rep(1, n)))*(Y_j%*%t(rep(1, n))-p)*q)/N
+  return(-c(da, db))
+}
+
 
 
 #Evaluate marginal log-likelihood
@@ -149,18 +192,22 @@ EM_2PL_inference <- function(a, b, g, x, dat, z, mu, w, tol = 0.001){
   phi0=matrix(0, J, 3)
   phi1=cbind(a, b, g)
   mu0=0
-  while(max(c(max(abs(phi0-phi1)), abs(mu0-mu)))>tol){#max
+   while(max(c(max(abs(phi0-phi1)), abs(mu0-mu)))>tol){#max
     phi0=phi1
     mu0=mu
-    
     #E-step
     quadrature=quad(a=phi0[,1], b=phi0[,2], g=phi0[,3], x, dat, z, mu0, w)
     
     #M-step
     for(j in 1:J){#update phi_j one by one
-      par_updates = optim(par=phi1[j, ], fn=target_function, gr=grad_phi, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
+      if (j==1){
+        par_updates = optim(par=phi1[j, c(1,2)], fn=target_function1, gr=grad_phi1, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
+        phi1[j, c(1,2)]=par_updates$par
+        
+      }
+      else{par_updates = optim(par=phi1[j, ], fn=target_function, gr=grad_phi, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
       phi1[j, ]=par_updates$par
-      phi1[1, 3]=0
+      }
     }
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
@@ -189,11 +236,17 @@ EM_2PL_lrt <- function(a, b, g, x, dat, z, mu, w, anchor, tol = 0.001){#anchor i
     
     #M-step
     for(j in 1:J){#update phi_j one by one
+      if (j %in% anchor){
+      par_updates = optim(par=phi1[j, c(1,2)], fn=target_function1, gr=grad_phi1, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
+      phi1[j, c(1,2)]=par_updates$par
+      }
+      
+      else{
       par_updates = optim(par=phi1[j, ], fn=target_function, gr=grad_phi, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
       phi1[j, ]=par_updates$par
-      #phi1[1, 3]=0
+      }
     }
-    phi1[anchor, 3]=0
+    #phi1[anchor, 3]=0
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
     MLL = mml(a=phi1[,1], b=phi1[,2], g=phi1[,3], x, dat, z, mu, w)
@@ -380,8 +433,7 @@ EM_2PL_L1 <- function(a, b, g, x, dat, z, mu, w, lmd, tau, k, tol){
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
     #MLL = mml_with_penalty(a=phi1[,1], b=phi1[,2], g=phi1[,3], x, dat, z, mu, w)
-    #print(MLL) 
-    #print(phi1[,3])
+    #print(MLL)
   }
   list(mu=mu, alpha.vec=phi1[,1], beta.vec = phi1[,2], gamma.vec = phi1[,3], post=quadrature);
 }
@@ -406,11 +458,17 @@ EM_2PL_non_zero <- function(a, b, g, x, dat, z, mu, w, tol){
     
     #M-step
     for(j in 1:J){#update phi_j one by one
+      if (j %in% idx0){
+      par_updates = optim(par=phi1[j,c(1,2)], fn=target_function1, gr=grad_phi1, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
+      phi1[j,c(1,2)]=par_updates$par
+      }
+      
+      else{
       par_updates = optim(par=phi1[j, ], fn=target_function, gr=grad_phi, method = "L-BFGS-B", x=x, Y_j=dat[,j], z, mu_pres=mu0, q=quadrature, lower=-3, upper=3)
       phi1[j, ]=par_updates$par
-      #phi1[1, 3]=0
+      }
     }
-    phi1[idx0, 3]=0
+    #phi1[idx0, 3]=0
     Theta=tran(z, x, mu0)
     mu=sum((Theta*quadrature)[ind1, ])/n1
     MLL = mml(a=phi1[,1], b=phi1[,2], g=phi1[,3], x, dat, z, mu, w)
