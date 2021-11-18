@@ -161,7 +161,7 @@ grad_phi1=function(phi_j, x, Y_j, z, mu_pres, q){
 
 
 #Evaluate marginal log-likelihood
-mml=function(a, b, g, x, dat, z, mu, w){ #q is quadrature
+mml=function(a, b, g, x, dat, z, mu, w){
   N=length(x)
   n=length(z)
   J=dim(dat)[2]
