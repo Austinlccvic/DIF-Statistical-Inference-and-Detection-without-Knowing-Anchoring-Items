@@ -171,12 +171,12 @@ mml=function(a, b, g, x, dat, z, mu, w){
   th=Theta[, 1]
   temp=(th%*%t(rep(1, J)))*(rep(1, N)%*%t(a))-rep(1, N)%*%t(b)+(x%*%t(rep(1, J)))*(rep(1, N)%*%t(g)) #N by J
   p=exp(temp)/(1+exp(temp))
-  res=(p^dat)*((1-p)^(1-dat))*w[1]*(pi)^(-0.5)
+  res=apply((p^dat)*((1-p)^(1-dat)), 1, prod)*w[1]*(pi)^(-0.5) #N dim
   for (k in 2:n){
     th=Theta[, k]
     temp=(th%*%t(rep(1, J)))*(rep(1, N)%*%t(a))-rep(1, N)%*%t(b)+(x%*%t(rep(1, J)))*(rep(1, N)%*%t(g))
     p=exp(temp)/(1+exp(temp))
-    res_r=(p^dat)*((1-p)^(1-dat))*w[k]*(pi)^(-0.5)
+    res_r=apply((p^dat)*((1-p)^(1-dat)), 1, prod)*w[k]*(pi)^(-0.5)
     res=res+res_r
   }
   res=-sum(log(res))
@@ -437,7 +437,7 @@ EM_2PL_L1 <- function(a, b, g, x, dat, z, mu, w, lmd, tau, k, tol){
   list(mu=mu, alpha.vec=phi1[,1], beta.vec = phi1[,2], gamma.vec = phi1[,3], post=quadrature);
 }
 
-##de-bias the non-zero entries obtained from LASSO method so as to compute the BIC
+##de-bias the non-zero entries obtained from LASSO method/hard-thresholding method so as to compute the MLL for AIC/BIC
 EM_2PL_non_zero <- function(a, b, g, x, dat, z, mu, w, tol){
   J=length(a)
   ind1=which(x==1)
@@ -549,15 +549,15 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
     
     #simulate new gammas to get p-values and CIs
     transform_p=g_hat[-anchor]
-    sim=mvrnorm(n=10000, mu=c(mu_hat, a_hat, b_hat, transform_p), Sigma=varian)
-    sim_gam=sim[, (2*J+2):(dim(sim)[2])]
+    #sim=mvrnorm(n=10000, mu=c(mu_hat, a_hat, b_hat, transform_p), Sigma=varian)
+    #sim_gam=sim[, (2*J+2):(dim(sim)[2])]
     
     #Get coverages
     cover_c=c()
     gam_no_anchor=gamma.vec[-c(anchor)]
-    for (j in 1:dim(sim_gam)[2]){
-      upp_c=quantile(sim_gam[, j], 1-sig/2)
-      low_c=quantile(sim_gam[, j], sig/2)
+    for (j in 1:length(transform_p)){
+      upp_c=transform_p[j]+qnorm(1-sig/2)*sd_g[j]
+      low_c=transform_p[j]-qnorm(1-sig/2)*sd_g[j]
       if (gam_no_anchor[j]>=low_c & gam_no_anchor[j]<=upp_c){
         cover_c=c(cover_c, 1)
       }
@@ -566,12 +566,11 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
     cover=rbind(cover, cover_c)
     
     #To get p-values
-    ga_trans=sim_gam-rep(1, 10000)%*%t(transform_p)
+
     p_value_curr=c()
-    for (j in 1:dim(sim_gam)[2]){
+    for (j in 1:length(transform_p)){
       stat=transform_p[j]
-      dist=as.vector(ga_trans[, j])
-      p_value_c=length(c(which(dist>abs(stat)), which(dist<   -abs(stat))))/10000
+      p_value_c=2*(1-pnorm(abs(stat), 0, sd_g[j]))
       p_value_curr=c(p_value_curr, p_value_c)
     }
     p_value=rbind(p_value, p_value_curr)
@@ -582,9 +581,9 @@ coverage_LRT=function(N, sig, gamma.vec, beta.vec, alpha.vec, anchor, sig_list){
     for (s in sig_list){
       upper=c()
       lower=c()
-      for (j in 1:dim(sim_gam)[2]){
-        upper=c(upper, quantile(sim_gam[, j], 1-s/2))
-        lower=c(lower, quantile(sim_gam[, j], s/2))
+      for (j in 1:length(transform_p)){
+        upper=c(upper, transform_p[j]+qnorm(1-s/2)*sd_g[j])
+        lower=c(lower, transform_p[j]-qnorm(1-s/2)*sd_g[j])
       }
       
       upper_p=upper[ind1_c]
@@ -672,7 +671,7 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
     #simulate new gammas to get p-values and CIs
     rqfit = rq(r$gamma.vec ~ -1 + r$alpha.vec)
     transform_p=g_hat-rqfit$coefficients[1]*a_hat
-    sim=mvrnorm(n=10000, mu=c(mu_hat, a_hat, b_hat, g_hat[2:J]), Sigma=varian)
+    sim=mvrnorm(n=10000, mu=c(mu_hat, a_hat, b_hat, rep(0, length(g_hat[2:J]))), Sigma=varian)
     sim_a=sim[, 2:(J+1)]
     sim_gam=cbind(rep(0, 10000), sim[, (2*J+2):(3*J)])
     
@@ -684,11 +683,10 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
     }
     
     #To get p-values
-    ga_trans=gamm_transform-transform_p%*%t(rep(1, 10000))
     p_value_curr=c()
     for (j in 1:J){
       stat=transform_p[j]
-      dist=as.vector(ga_trans[j, ])
+      dist=as.vector(gamm_transform[j, ])
       p_value_c=length(c(which(dist>abs(stat)), which(dist<   -abs(stat))))/10000
       p_value_curr=c(p_value_curr, p_value_c)
     }
@@ -697,8 +695,8 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
     
     cover_c=c()
     for (j in 1:J){
-      upp_c=quantile(gamm_transform[j, ], 1-sig/2)
-      low_c=quantile(gamm_transform[j, ], sig/2)
+      upp_c=transform_p[j]+quantile(gamm_transform[j, ], 1-sig/2)
+      low_c=transform_p[j]+quantile(gamm_transform[j, ], sig/2)
       if (gamma.vec[j]>=low_c & gamma.vec[j]<=upp_c){
         cover_c=c(cover_c, 1)
       }
@@ -715,8 +713,8 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
       upper=c()
       lower=c()
       for (j in 1:J){
-        upper=c(upper, quantile(gamm_transform[j, ], 1-s/2))
-        lower=c(lower, quantile(gamm_transform[j, ], s/2))
+        upper=c(upper, transform_p[j]+quantile(gamm_transform[j, ], 1-s/2))
+        lower=c(lower, transform_p[j]+quantile(gamm_transform[j, ], s/2))
       }
       
       upper_p=upper[ind1]
@@ -739,7 +737,8 @@ coverage_proposed_inference=function(N, sig, gamma.vec, beta.vec, alpha.vec, sig
 
 
 #### Compare performances e.g. FPR, TPR, AIC, BIC and etc for the proposed hard-thresholding method and the LASSO method ####
-compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.001){
+compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, seed, tol = 0.001){
+  set.seed(seed)
   J=length(g)
   n0=N/2
   n1=N/2
@@ -748,7 +747,6 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
   ind0=which(g==0)
   n_p=length(ind1)
   n_n=length(ind0)
-  set.seed(5)
   BIC_L1=c()
   BIC_prop=c()
   AIC_L1=c()
@@ -761,9 +759,11 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
   TPR_prop=c()
   FPR_L1=c()
   FPR_prop=c()
-  opt_penalty=c()
-  opt_threshold=c()
-  for (q in 1:100){
+  opt_penalty_AIC=c()
+  opt_penalty_BIC=c()
+  opt_threshold_AIC=c()
+  opt_threshold_BIC=c()
+  for (q in 1:20){
     
     #Generate data
     theta.vec=c(rnorm(n0, mean = 0, sd=1), rnorm(n1, mean = 0.5, sd=1))
@@ -791,7 +791,8 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     }
     gam_L1=rbind(gam_L1, g_temp)
     idx_opt_lmd=which.min(BIC_temp)
-    opt_penalty=c(opt_penalty, penalty[idx_opt_lmd])
+    opt_penalty_BIC=c(opt_penalty_BIC, penalty[idx_opt_lmd])
+    opt_penalty_AIC=c(opt_penalty_AIC, penalty[which.min(AIC_temp)])
     BIC_L1=c(BIC_L1, min(BIC_temp))
     AIC_L1=c(AIC_L1,  AIC_temp[idx_opt_lmd])
     opt_g=g_temp[idx_opt_lmd, ]
@@ -805,7 +806,7 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     
     
     #Proposed method
-    r=EM_2PL_inference(runif(J), runif(J), runif(J), x=x.vec, dat, z, mu=0.5, w, tol=tol)
+    r=EM_2PL(runif(J), runif(J), runif(J), x=x.vec, dat, z, mu=0.5, w, tol=tol)
     g_hat=r$gamma.vec
     mu_hat=r$mu
     a_hat=r$alpha.vec
@@ -814,7 +815,6 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     rqfit <- rq(g_hat ~ -1+a_hat)
     gamm_transform=g_hat-rqfit$coefficients[1]*a_hat
     
-    #To remember the original index of each element
     g_temp=NULL
     BIC_temp=c()
     AIC_temp=c()
@@ -830,7 +830,8 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     }
     gam_prop=rbind(gam_prop, g_temp)
     idx_opt_threshold=which.min(BIC_temp)
-    opt_threshold=c(opt_threshold, thresholds[idx_opt_threshold])
+    opt_threshold_BIC=c(opt_threshold_BIC, thresholds[idx_opt_threshold])
+    opt_threshold_AIC=c(opt_threshold_AIC, thresholds[which.min(AIC_temp)])
     BIC_prop=c(BIC_prop, min(BIC_temp))
     AIC_prop=c(AIC_prop,  AIC_temp[idx_opt_threshold])
     gam_final=g_temp[idx_opt_threshold, ]
@@ -843,9 +844,10 @@ compare_method=function(N, penalty, thresholds, a, b, g, z, mu, w, k, tol = 0.00
     
   }  
   
-  return(list(TPR_L1=TPR_L1, FPR_L1=FPR_L1, AIC_L1=AIC_L1, BIC_L1=BIC_L1, gam_L1=gam_L1, gam_L1_opt=gam_L1_opt, opt_penalty=opt_penalty, 
-              TPR_prop=TPR_prop, FPR_prop=FPR_prop, AIC_prop=AIC_prop, BIC_prop=BIC_prop, gam_prop=gam_prop, gam_prop_opt=gam_prop_opt, opt_threshold=opt_threshold))
+  return(list(TPR_L1=TPR_L1, FPR_L1=FPR_L1, AIC_L1=AIC_L1, BIC_L1=BIC_L1, gam_L1=gam_L1, gam_L1_opt=gam_L1_opt, opt_penalty_AIC=opt_penalty_AIC, opt_penalty_BIC=opt_penalty_BIC,
+              TPR_prop=TPR_prop, FPR_prop=FPR_prop, AIC_prop=AIC_prop, BIC_prop=BIC_prop, gam_prop=gam_prop,gam_prop_opt=gam_prop_opt, opt_threshold_AIC=opt_threshold_AIC,opt_threshold_BIC=opt_threshold_BIC))
 }
+
 
 
 
