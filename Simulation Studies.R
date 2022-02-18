@@ -232,11 +232,11 @@ gamma.vec=c(rep(0, 15), rep(c(-1, 1.3, -0.9, 1.2, 1), 2))
 beta.vec=rep(c(0.8, 0.2, -0.4, -1, 1), 5)
 alpha.vec=rep(c(1.3,1.4,1.5,1.7,1.6), 5)
 N=500
-
+seed=1
 
 penalty=seq(0.01, 0.15, (0.15-0.01)/19)
 threshold=seq(0, 1.8, 1.8/19)
-r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, tol = 0.001)
+r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, seed, tol = 0.001)
 write.table(r$TPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN500_L1_large.csv')
 write.table(r$FPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'FPRN500_L1_large.csv')  
 write.table(r$TPR_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN500_hard_large.csv')
@@ -246,18 +246,19 @@ write.table(r$AIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN50
 write.table(r$BIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN500_L1_large.csv')  
 write.table(r$gam_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN500_L1_large.csv')
 write.table(r$gam_L1_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN500_L1_large.csv')
-write.table(r$opt_penalty, sep=",",  col.names=FALSE, row.names=FALSE, file = 'penaltyoptN500_L1_large.csv')
+write.table(r$opt_penalty_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICpenaltyoptN500_L1_large.csv')
 write.table(r$AIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN500_hard_large.csv')
 write.table(r$BIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN500_hard_large.csv')  
 write.table(r$gam_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN500_hard_large.csv')
-write.table(r$gam_prop_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN500_hard_large.csv')  
+write.table(r$gam_prop_opt_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICgamoptN500_hard_large.csv')  
 write.table(r$opt_threshold, sep=",",  col.names=FALSE, row.names=FALSE, file = 'thresholdoptN500_hard_large.csv')
 
 
 N=1000
 penalty=seq(0.01, 0.15, (0.15-0.01)/19)
 threshold=seq(0, 1.8, 1.8/19)
-r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, tol = 0.001)
+seed=1
+r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, seed, tol = 0.001)
 write.table(r$TPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN1000_L1_large.csv')
 write.table(r$FPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'FPRN1000_L1_large.csv')
 write.table(r$TPR_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN1000_hard_large.csv')
@@ -267,11 +268,11 @@ write.table(r$AIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN10
 write.table(r$BIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN1000_L1_large.csv')
 write.table(r$gam_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN1000_L1_large.csv')
 write.table(r$gam_L1_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN1000_L1_large.csv')
-write.table(r$opt_penalty, sep=",",  col.names=FALSE, row.names=FALSE, file = 'penaltyoptN1000_L1_large.csv')
+write.table(r$opt_penalty_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICpenaltyoptN1000_L1_large.csv')
 write.table(r$AIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN1000_hard_large.csv')
 write.table(r$BIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN1000_hard_large.csv')
 write.table(r$gam_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN1000_hard_large.csv')
-write.table(r$gam_prop_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN1000_hard_large.csv')
+write.table(r$gam_prop_opt_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICgamoptN1000_hard_large.csv')
 write.table(r$opt_threshold, sep=",",  col.names=FALSE, row.names=FALSE, file = 'thresholdoptN1000_hard_large.csv')
 
 
@@ -283,7 +284,8 @@ beta.vec=rep(c(0.8, 0.2, -0.4, -1, 1), 5)
 alpha.vec=rep(c(1.3,1.4,1.5,1.7,1.6), 5)
 penalty=seq(0.01, 0.09, (0.09-0.01)/19)
 threshold=seq(0, 0.9, 0.9/19)
-r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, tol = 0.001)
+seed=1
+r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, seed, tol = 0.001)
 write.table(r$TPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN500_L1_small.csv')
 write.table(r$FPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'FPRN500_L1_small.csv')  
 write.table(r$TPR_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN500_hard_small.csv')
@@ -293,11 +295,11 @@ write.table(r$AIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN50
 write.table(r$BIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN500_L1_small.csv')  
 write.table(r$gam_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN500_L1_small.csv')
 write.table(r$gam_L1_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN500_L1_small.csv')
-write.table(r$opt_penalty, sep=",",  col.names=FALSE, row.names=FALSE, file = 'penaltyoptN500_L1_small.csv')
+write.table(r$opt_penalty_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICpenaltyoptN500_L1_small.csv')
 write.table(r$AIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN500_hard_small.csv')
 write.table(r$BIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN500_hard_small.csv')  
 write.table(r$gam_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN500_hard_small.csv')
-write.table(r$gam_prop_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN500_hard_small.csv')  
+write.table(r$gam_prop_opt_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICgamoptN500_hard_small.csv')  
 write.table(r$opt_threshold, sep=",",  col.names=FALSE, row.names=FALSE, file = 'thresholdoptN500_hard_small.csv')
 
 
@@ -307,7 +309,8 @@ write.table(r$opt_threshold, sep=",",  col.names=FALSE, row.names=FALSE, file = 
 N=1000
 penalty=seq(0.01, 0.09, (0.09-0.01)/19)
 threshold=seq(0, 0.9, 0.9/19)
-r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, tol = 0.001)
+seed=1
+r=compare_method(N=N, penalty=penalty, thresholds=threshold, a=alpha.vec, b=beta.vec, g=gamma.vec, z, mu=0.5, w, k=1, seed, tol = 0.001)
 write.table(r$TPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN1000_L1_small.csv')
 write.table(r$FPR_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'FPRN1000_L1_small.csv')
 write.table(r$TPR_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'TPRN1000_hard_small.csv')
@@ -317,11 +320,11 @@ write.table(r$AIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN10
 write.table(r$BIC_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN1000_L1_small.csv')
 write.table(r$gam_L1, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN1000_L1_small.csv')
 write.table(r$gam_L1_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN1000_L1_small.csv')
-write.table(r$opt_penalty, sep=",",  col.names=FALSE, row.names=FALSE, file = 'penaltyoptN1000_L1_small.csv')
+write.table(r$opt_penalty_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICpenaltyoptN1000_L1_small.csv')
 write.table(r$AIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'AICN1000_hard_small.csv')
 write.table(r$BIC_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICN1000_hard_small.csv')
 write.table(r$gam_prop, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamallN1000_hard_small.csv')
-write.table(r$gam_prop_opt, sep=",",  col.names=FALSE, row.names=FALSE, file = 'gamoptN1000_hard_small.csv')
+write.table(r$gam_prop_opt_BIC, sep=",",  col.names=FALSE, row.names=FALSE, file = 'BICgamoptN1000_hard_small.csv')
 write.table(r$opt_threshold, sep=",",  col.names=FALSE, row.names=FALSE, file = 'thresholdoptN1000_hard_small.csv')
 
 
@@ -345,7 +348,7 @@ fdr_1000_4=FDR(pmat=p_N1000_4, gamma.vec=c(rep(0, 15), rep(c(-0.4, 0.4, -0.5, 0.
 fdr_1000_1=FDR(pmat=p_N1000_1, gamma.vec=c(rep(0, 15), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), fdr=0.05)
 
 fdr_proposed=c(fdr_500_4,fdr_500_1,fdr_1000_4,fdr_1000_1)
-fdr_proposed#0.01367 0.02655 0.02243 0.02370
+
 
 
 ##LRT method
@@ -360,8 +363,7 @@ fdr_1000_4=FDR(pmat=p_N1000_4, gamma.vec=c(rep(0, 14), rep(c(-0.4, 0.4, -0.5, 0.
 fdr_1000_1=FDR(pmat=p_N1000_1, gamma.vec=c(rep(0, 14), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), fdr=0.05)
 
 fdr_anchor1=c(fdr_500_4,fdr_500_1,fdr_1000_4,fdr_1000_1)
-fdr_anchor1
-#0.01527 0.02730 0.01999 0.02028
+
 
 #anchor set 5
 p_N500_4=read.csv(file = 'pvalue_N500_small_anchor5.csv', header = F)
@@ -374,8 +376,7 @@ fdr_1000_4=FDR(pmat=p_N1000_4, gamma.vec=c(rep(0, 10), rep(c(-0.4, 0.4, -0.5, 0.
 fdr_1000_1=FDR(pmat=p_N1000_1, gamma.vec=c(rep(0, 10), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), fdr=0.05)
 
 fdr_anchor5=c(fdr_500_4,fdr_500_1,fdr_1000_4,fdr_1000_1)
-fdr_anchor5
-#0.02317 0.03446 0.01913 0.02542
+
 
 
 #anchor set 10
@@ -389,8 +390,7 @@ fdr_1000_4=FDR(pmat=p_N1000_4, gamma.vec=c(rep(0, 5), rep(c(-0.4, 0.4, -0.5, 0.4
 fdr_1000_1=FDR(pmat=p_N1000_1, gamma.vec=c(rep(0, 5), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), fdr=0.05)
 
 fdr_anchor10=c(fdr_500_4,fdr_500_1,fdr_1000_4,fdr_1000_1)
-fdr_anchor10
-#0.01483 0.02258 0.01144 0.01259
+
 
 
 
@@ -410,7 +410,7 @@ prop_N500_1=eva_auc(tpr=TPR_N500_1, fpr=FPR_N500_1)
 prop_N1000_4=eva_auc(tpr=TPR_N1000_4, fpr=FPR_N1000_4)
 prop_N1000_1=eva_auc(tpr=TPR_N1000_1, fpr=FPR_N1000_1)
 auc_prop=c(prop_N500_4,prop_N500_1,prop_N1000_4,prop_N1000_1)
-auc_prop#0.8093847 0.9966467 0.9257327 0.9997023 
+ 
 
 #LRT
 #anchor1
@@ -427,7 +427,7 @@ lrt_N500_1=eva_auc(tpr=TPR_N500_1, fpr=FPR_N500_1)
 lrt_N1000_4=eva_auc(tpr=TPR_N1000_4, fpr=FPR_N1000_4)
 lrt_N1000_1=eva_auc(tpr=TPR_N1000_1, fpr=FPR_N1000_1)
 auc_lrt1=c(lrt_N500_4, lrt_N500_1, lrt_N1000_4, lrt_N1000_1)
-auc_lrt1 #0.6956532 0.9581968 0.8309464 0.9936389 
+
 
 
 #anchor5
@@ -444,7 +444,7 @@ lrt_N500_1=eva_auc(tpr=TPR_N500_1, fpr=FPR_N500_1)
 lrt_N1000_4=eva_auc(tpr=TPR_N1000_4, fpr=FPR_N1000_4)
 lrt_N1000_1=eva_auc(tpr=TPR_N1000_1, fpr=FPR_N1000_1)
 auc_lrt5=c(lrt_N500_4, lrt_N500_1, lrt_N1000_4, lrt_N1000_1)
-auc_lrt5#0.7927500 0.9899265 0.9085585 0.9995060 
+
 
 #anchor10
 TPR_N500_4=read.csv(file = 'TPR_N500_small_anchor10.csv', header = F)
@@ -460,7 +460,7 @@ lrt_N500_1=eva_auc(tpr=TPR_N500_1, fpr=FPR_N500_1)
 lrt_N1000_4=eva_auc(tpr=TPR_N1000_4, fpr=FPR_N1000_4)
 lrt_N1000_1=eva_auc(tpr=TPR_N1000_1, fpr=FPR_N1000_1)
 auc_lrt10=c(lrt_N500_4, lrt_N500_1, lrt_N1000_4, lrt_N1000_1)
-auc_lrt10 #0.800735 0.992338 0.927225 0.997816 
+
 
 
 ### Explore the coverage rates of the confidence intervals constructed using the proposed inference method and the LRT method ###
@@ -617,12 +617,9 @@ TPR_N1000_4=read.csv(file = 'TPRN1000_L1_small.csv', header = F)
 FPR_N1000_4=read.csv(file = 'FPRN1000_L1_small.csv', header = F)
 TPR_N1000_1=read.csv(file = 'TPRN1000_L1_large.csv', header = F)
 FPR_N1000_1=read.csv(file = 'FPRN1000_L1_large.csv', header = F)
-TPR_L1=round(c(mean(TPR_N500_4[,1]),mean(TPR_N500_1[,1]),mean(TPR_N1000_4[,1]),mean(TPR_N1000_1[,1])),5)
-FPR_L1=round(c(mean(FPR_N500_4[,1]),mean(FPR_N500_1[,1]),mean(FPR_N1000_4[,1]),mean(FPR_N1000_1[,1])),5)
-TPR_L1
-#0.431 0.986 0.610 1.000
-FPR_L1
-#0.03800 0.04133 0.03800 0.02067
+TPR_L1=round(c(mean(TPR_N500_4[,1]),mean(TPR_N500_1[,1]),mean(TPR_N1000_4[,1]),mean(TPR_N1000_1[,1])),3)
+FPR_L1=round(c(mean(FPR_N500_4[,1]),mean(FPR_N500_1[,1]),mean(FPR_N1000_4[,1]),mean(FPR_N1000_1[,1])),3)
+
 
 #Proposed
 TPR_N500_4=read.csv(file = 'TPRN500_hard_small.csv', header = F)
@@ -633,12 +630,9 @@ TPR_N1000_4=read.csv(file = 'TPRN1000_hard_small.csv', header = F)
 FPR_N1000_4=read.csv(file = 'FPRN1000_hard_small.csv', header = F)
 TPR_N1000_1=read.csv(file = 'TPRN1000_hard_large.csv', header = F)
 FPR_N1000_1=read.csv(file = 'FPRN1000_hard_large.csv', header = F)
-TPR_prop=round(c(mean(TPR_N500_4[,1]),mean(TPR_N500_1[,1]),mean(TPR_N1000_4[,1]),mean(TPR_N1000_1[,1])),5)
-FPR_prop=round(c(mean(FPR_N500_4[,1]),mean(FPR_N500_1[,1]),mean(FPR_N1000_4[,1]),mean(FPR_N1000_1[,1])),5)
-TPR_prop
-#0.453 0.984 0.602 1.000
-FPR_prop
-#0.04400 0.03733 0.03267 0.02200
+TPR_prop=round(c(mean(TPR_N500_4[,1]),mean(TPR_N500_1[,1]),mean(TPR_N1000_4[,1]),mean(TPR_N1000_1[,1])),3)
+FPR_prop=round(c(mean(FPR_N500_4[,1]),mean(FPR_N500_1[,1]),mean(FPR_N1000_4[,1]),mean(FPR_N1000_1[,1])),3)
+
 
 
 #### Compare area under the ROC curves of the proposed hard-thresholding and the LASSO method using BIC as tuning criteria ####
@@ -655,8 +649,8 @@ res_N1000_4=eva_tpr_fpr(gam=gam_N1000_4, gamma.vec=c(rep(0, 15), rep(c(-0.4, 0.4
 auc_N1000_4=eva_auc(tpr=res_N1000_4$TPR, fpr=res_N1000_4$FPR)
 res_N1000_1=eva_tpr_fpr(gam=gam_N1000_1, gamma.vec=c(rep(0, 15), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), rep=100)
 auc_N1000_1=eva_auc(tpr=res_N1000_1$TPR, fpr=res_N1000_1$FPR)
-auc_l1=c(auc_N500_4,auc_N500_1,auc_N1000_4,auc_N1000_1)
-auc_l1#0.7893070 0.9942637 0.8365637 0.9986567 
+auc_l1=round(c(auc_N500_4,auc_N500_1,auc_N1000_4,auc_N1000_1),3)
+
 
 
 #Proposed hard-thresholding method
@@ -672,8 +666,8 @@ res_N1000_4=eva_tpr_fpr(gam=gam_N1000_4, gamma.vec=c(rep(0, 15), rep(c(-0.4, 0.4
 auc_N1000_4=eva_auc(tpr=res_N1000_4$TPR, fpr=res_N1000_4$FPR)
 res_N1000_1=eva_tpr_fpr(gam=gam_N1000_1, gamma.vec=c(rep(0, 15), rep(c(-1, 1.3, -0.9, 1.2, 1), 2)), rep=100)
 auc_N1000_1=eva_auc(tpr=res_N1000_1$TPR, fpr=res_N1000_1$FPR)
-auc_prop=c(auc_N500_4,auc_N500_1,auc_N1000_4,auc_N1000_1)
-auc_prop#0.8250580 0.9960800 0.9140160 0.9995927 
+auc_prop=round(c(auc_N500_4,auc_N500_1,auc_N1000_4,auc_N1000_1),3)
+
 
 
 
